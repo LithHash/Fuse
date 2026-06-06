@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x86_64
+            os: windows-latest
+            artifact: fuse-windows-x86_64.zip
+            binary: fuse.exe
+          - name: linux-x86_64
+            os: ubuntu-latest
+            artifact: fuse-linux-x86_64.zip
+            binary: fuse
+          - name: macos-aarch64
+            os: macos-latest
+            artifact: fuse-macos-aarch64.zip
+            binary: fuse
+          - name: macos-x86_64
+            os: macos-13
+            artifact: fuse-macos-x86_64.zip
+            binary: fuse
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist
+          Copy-Item target/release/${{ matrix.binary }} dist/fuse.exe
+          Compress-Archive -Path dist/fuse.exe -DestinationPath ${{ matrix.artifact }}
+
+      - name: Package Unix
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p dist
+          cp target/release/${{ matrix.binary }} dist/fuse
+          chmod +x dist/fuse
+          cd dist
+          zip ../${{ matrix.artifact }} fuse
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}
