@@ -2,7 +2,10 @@
 name = "fuse"
 version = "0.1.0"
 edition = "2024"
+<<<<<<< HEAD
 license = "MPL-2.0"
+=======
+>>>>>>> 03fbe67b77fbc2b64f9da413941bb6abcbdae9a6
 
 [dependencies]
 anyhow = "1"
