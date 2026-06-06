@@ -24,26 +24,30 @@ jobs:
           - name: windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: fuse-windows-x86_64.exe
+            artifact: fuse-windows-x86_64.zip
             binary: target/x86_64-pc-windows-msvc/release/fuse.exe
+            packed_binary: fuse.exe
 
           - name: linux-x86_64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact: fuse-linux-x86_64
+            artifact: fuse-linux-x86_64.zip
             binary: target/x86_64-unknown-linux-gnu/release/fuse
+            packed_binary: fuse
 
           - name: macos-x86_64
             os: macos-latest
             target: x86_64-apple-darwin
-            artifact: fuse-macos-x86_64
+            artifact: fuse-macos-x86_64.zip
             binary: target/x86_64-apple-darwin/release/fuse
+            packed_binary: fuse
 
           - name: macos-aarch64
             os: macos-latest
             target: aarch64-apple-darwin
-            artifact: fuse-macos-aarch64
+            artifact: fuse-macos-aarch64.zip
             binary: target/aarch64-apple-darwin/release/fuse
+            packed_binary: fuse
 
     steps:
       - uses: actions/checkout@v4
@@ -55,9 +59,13 @@ jobs:
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Rename binary
+      - name: Package binary
         shell: bash
-        run: cp "${{ matrix.binary }}" "${{ matrix.artifact }}"
+        run: |
+          mkdir -p dist
+          cp "${{ matrix.binary }}" "dist/${{ matrix.packed_binary }}"
+          cd dist
+          7z a "../${{ matrix.artifact }}" "${{ matrix.packed_binary }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
