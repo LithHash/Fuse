@@ -1,0 +1,10 @@
+[package]
+name = "fuse"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+rbx_binary = { version = "2", features = ["unstable_text_format"] }
+rbx_dom_weak = "4"
+serde_json = "1"
