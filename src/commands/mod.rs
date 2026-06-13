@@ -2,6 +2,7 @@ mod compile;
 mod decompile;
 mod init;
 mod merge;
+mod sourcemap;
 
 use std::path::PathBuf;
 
@@ -9,7 +10,7 @@ use anyhow::{Result, bail};
 
 use crate::{config::Config, constants::HELP_TEXT};
 
-pub fn print_help() {
+fn print_help() {
     print!("{HELP_TEXT}");
 }
 
@@ -19,7 +20,7 @@ pub fn run(args: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    if args[1] == "-h" || args[1] == "--help" {
+    if args[1] == "--help" {
         print_help();
         return Ok(());
     }
@@ -28,6 +29,7 @@ pub fn run(args: &[String]) -> Result<()> {
     let mut input: Option<PathBuf> = None;
     let mut input_b: Option<PathBuf> = None;
     let mut output: Option<PathBuf> = None;
+    let mut watch = false;
 
     let mut index = 2;
     while index < args.len() {
@@ -44,6 +46,9 @@ pub fn run(args: &[String]) -> Result<()> {
                 index += 1;
                 output = Some(read_path_arg(args, index, "--output")?);
             }
+            "--watch" | "-w" => {
+                watch = true;
+            }
             "--help" | "-h" => {
                 print_help();
                 return Ok(());
@@ -57,28 +62,34 @@ pub fn run(args: &[String]) -> Result<()> {
     match command {
         "init" => init::run(),
         "compile" => {
-            let Some(input) = input else {
-                bail!("Missing --input");
-            };
-
-            let Some(output) = output else {
-                bail!("Missing --output");
-            };
+            let input = input.unwrap_or_else(|| PathBuf::from("."));
 
             let config = Config::load()?;
+            let output =
+                output.unwrap_or_else(|| PathBuf::from(format!("{}.rbxl", config.project_name)));
+
             compile::run(&config, &input, &output)
         }
         "decompile" => {
             let Some(input) = input else {
-                bail!("Missing --input");
+                bail!("Missing --input (path to the .rbxl file to decompile)");
             };
 
-            let Some(output) = output else {
-                bail!("Missing --output");
-            };
+            let output = output.unwrap_or_else(|| PathBuf::from("."));
 
             let config = Config::load()?;
             decompile::run(&config, &input, &output)
+        }
+        "sourcemap" => {
+            let input = input.unwrap_or_else(|| PathBuf::from("."));
+            let output = output.unwrap_or_else(|| PathBuf::from("sourcemap.json"));
+
+            let config = Config::load()?;
+            if watch {
+                sourcemap::watch(&config, &input, &output)
+            } else {
+                sourcemap::run(&config, &input, &output)
+            }
         }
         "merge" => {
             let Some(input_a) = input else {
@@ -97,7 +108,8 @@ pub fn run(args: &[String]) -> Result<()> {
         }
         _ => {
             print_help();
-            return Ok(());
+
+            Ok(())
         }
     }
 }

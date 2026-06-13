@@ -53,13 +53,12 @@ fn merge_children(
     for child_id in source_instance.children().to_vec() {
         let child = source.get_by_ref(child_id).unwrap();
 
-        if should_merge_singleton(child.class.as_str(), child.name.as_str()) {
-            if let Some(existing_id) =
+        if should_merge_singleton(child.class.as_str(), child.name.as_str())
+            && let Some(existing_id) =
                 find_singleton_child(target, parent_id, child.class.as_str(), child.name.as_str())
-            {
-                merge_children(source, child_id, target, existing_id)?;
-                continue;
-            }
+        {
+            merge_children(source, child_id, target, existing_id)?;
+            continue;
         }
 
         clone_instance_tree(source, child_id, target, parent_id)?;
@@ -114,7 +113,7 @@ fn find_singleton_child(
 fn should_merge_singleton(class_name: &str, name: &str) -> bool {
     is_service(class_name)
         || is_engine_singleton(class_name)
-        || matches!(name, "Terrain" | "Workspace Camera")
+        || matches!(name, "Terrain" | "Camera")
 }
 
 fn is_engine_singleton(class_name: &str) -> bool {
